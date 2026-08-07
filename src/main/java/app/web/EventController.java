@@ -4,6 +4,7 @@ import app.service.EventService;
 import app.web.dto.ActiveEventResponse;
 import app.web.dto.CreateEventRequest;
 import app.web.dto.EditEventRequest;
+import app.web.dto.EventDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/event")
@@ -47,6 +50,13 @@ public class EventController {
         eventService.editEvent(request);
 
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<EventDTO>> getAllEvents() {
+
+        return ResponseEntity.ok(eventService.getAllEvents());
+
     }
 
 
