@@ -26,4 +26,19 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
             LocalDateTime start,
             LocalDateTime end
     );
+
+    Optional<Event> findByTitle(String title);
+
+    @Query("""
+       SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END
+       FROM Event e
+       WHERE e.id <> :id
+       AND e.start < :end
+       AND e.end > :start
+       """)
+    boolean existsOverlappingEventExceptCurrent(
+            UUID id,
+            LocalDateTime start,
+            LocalDateTime end
+    );
 }
