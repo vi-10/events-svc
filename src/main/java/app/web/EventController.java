@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/event")
@@ -59,5 +60,11 @@ public class EventController {
 
     }
 
+    @DeleteMapping("/{eventId}")
+    public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
 
+        eventService.deleteEvent(eventId);
+
+        return ResponseEntity.noContent().build();
+    }
 }
