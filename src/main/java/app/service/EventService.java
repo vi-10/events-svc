@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -95,5 +96,13 @@ public class EventService {
 
     public List<EventDTO> getAllEvents() {
         return eventRepository.findAll().stream().map(EventMapper::toEventDTO).toList();
+    }
+
+    public void deleteEvent(UUID eventId) {
+        if (!eventRepository.existsById(eventId)) {
+            throw new EventNotFoundException("Event not found");
+        }
+
+        eventRepository.deleteById(eventId);
     }
 }
