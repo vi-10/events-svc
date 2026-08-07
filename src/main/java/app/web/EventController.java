@@ -3,6 +3,7 @@ package app.web;
 import app.service.EventService;
 import app.web.dto.ActiveEventResponse;
 import app.web.dto.CreateEventRequest;
+import app.web.dto.EditEventRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,15 @@ public class EventController {
         eventService.createEvent(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PutMapping
+    public ResponseEntity<Void> editEvent(
+            @Valid @RequestBody EditEventRequest request) {
+
+        eventService.editEvent(request);
+
+        return ResponseEntity.ok().build();
     }
 
 
