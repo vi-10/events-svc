@@ -8,10 +8,12 @@ import app.repository.EventRepository;
 import app.web.dto.ActiveEventResponse;
 import app.web.dto.CreateEventRequest;
 import app.web.dto.EditEventRequest;
+import app.web.dto.EventDTO;
 import app.web.mapper.EventMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -89,5 +91,9 @@ public class EventService {
         event.setEnd(request.getEnd());
 
         eventRepository.save(event);
+    }
+
+    public List<EventDTO> getAllEvents() {
+        return eventRepository.findAll().stream().map(EventMapper::toEventDTO).toList();
     }
 }
