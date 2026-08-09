@@ -32,7 +32,7 @@ public class EventService {
 
     public void createEvent(CreateEventRequest request) {
         if (eventRepository.existsByTitle(request.getTitle())) {
-            throw new EventAlreadyExistsException("An event with this title already exists");
+            throw new EventAlreadyExistsException(request.getTitle());
         }
 
         if (!request.getStart().isBefore(request.getEnd())) {
@@ -62,13 +62,12 @@ public class EventService {
 
     public void editEvent(EditEventRequest request) {
         Event event = eventRepository.findById(request.getId())
-                .orElseThrow(() -> new EventNotFoundException("Event not found"));
+                .orElseThrow(EventNotFoundException::new);
 
         Optional<Event> existingEvent = eventRepository.findByTitle(request.getTitle());
 
         if (existingEvent.isPresent() && !existingEvent.get().getId().equals(request.getId())) {
-            throw new EventAlreadyExistsException("An event with this title already exists"
-            );
+            throw new EventAlreadyExistsException(request.getTitle());
         }
 
         if (!request.getStart().isBefore(request.getEnd())) {
@@ -100,7 +99,7 @@ public class EventService {
 
     public void deleteEvent(UUID eventId) {
         if (!eventRepository.existsById(eventId)) {
-            throw new EventNotFoundException("Event not found");
+            throw new EventNotFoundException();
         }
 
         eventRepository.deleteById(eventId);
