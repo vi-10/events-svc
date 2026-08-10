@@ -3,6 +3,7 @@ package app.web;
 import app.model.QuestType;
 import app.service.EventService;
 import app.web.dto.ActiveEventResponse;
+import app.web.dto.CreateEventRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -11,14 +12,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import java.time.LocalDateTime;
 
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 @ActiveProfiles("test")
 @WebMvcTest(EventController.class)
@@ -31,6 +34,9 @@ public class EventControllerApiTest {
 
     @MockitoBean
     private CacheManager cacheManager;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     void getActiveEvent_shouldReturnEvent_whenActiveEventExists() throws Exception {
@@ -72,5 +78,51 @@ public class EventControllerApiTest {
 
         verify(eventService).getActiveEvent();
     }
+
+
+    @Test
+    void createEvent_shouldReturn201_whenRequestIsValid() throws Exception {
+
+        CreateEventRequest request = CreateEventRequest.builder()
+                .title("Double XP Weekend")
+                .description("Earn extra XP from quests.")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(100)
+                .bonusGold(50)
+                .start(LocalDateTime.now().plusHours(1))
+                .end(LocalDateTime.now().plusHours(3))
+                .build();
+
+        mockMvc.perform(post("/api/v1/event")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(content().string(""));
+
+        verify(eventService).createEvent(any(CreateEventRequest.class));
+    }
+
+    @Test
+    void createEvent_shouldReturn400_whenRequestIsInvalid() throws Exception {
+
+        CreateEventRequest request = CreateEventRequest.builder()
+                .title("")
+                .description("")
+                .affectedQuestType(null)
+                .bonusXp(-10)
+                .bonusGold(-5)
+                .start(null)
+                .end(null)
+                .build();
+
+        mockMvc.perform(post("/api/v1/event")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verify(eventService, never()).createEvent(any(CreateEventRequest.class));
+    }
+
+
 
 }
