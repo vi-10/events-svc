@@ -4,6 +4,7 @@ import app.model.QuestType;
 import app.service.EventService;
 import app.web.dto.ActiveEventResponse;
 import app.web.dto.CreateEventRequest;
+import app.web.dto.EditEventRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -123,6 +125,52 @@ public class EventControllerApiTest {
         verify(eventService, never()).createEvent(any(CreateEventRequest.class));
     }
 
+    @Test
+    void editEvent_shouldReturn200_whenRequestIsValid() throws Exception {
+
+        UUID eventId = UUID.randomUUID();
+
+        EditEventRequest request = EditEventRequest.builder()
+                .id(eventId)
+                .title("Updated Event")
+                .description("Updated event description.")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(150)
+                .bonusGold(75)
+                .start(LocalDateTime.now().plusHours(1))
+                .end(LocalDateTime.now().plusHours(3))
+                .build();
+
+        mockMvc.perform(put("/api/v1/event")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""));
+
+        verify(eventService).editEvent(any(EditEventRequest.class));
+    }
+
+    @Test
+    void editEvent_shouldReturn400_whenRequestIsInvalid() throws Exception {
+
+        EditEventRequest request = EditEventRequest.builder()
+                .id(null)
+                .title("")
+                .description("")
+                .affectedQuestType(null)
+                .bonusXp(-10)
+                .bonusGold(-5)
+                .start(null)
+                .end(null)
+                .build();
+
+        mockMvc.perform(put("/api/v1/event")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verify(eventService, never()).editEvent(any(EditEventRequest.class));
+    }
 
 
 }
