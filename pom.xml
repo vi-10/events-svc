@@ -11,7 +11,7 @@
 	<groupId>com.example</groupId>
 	<artifactId>events-svc</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>notification-svc</name>
+	<name>events-svc</name>
 	<description>Kingdom Events Service</description>
 	<url/>
 	<licenses>
@@ -52,10 +52,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
