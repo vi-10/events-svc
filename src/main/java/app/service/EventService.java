@@ -12,6 +12,7 @@ import app.web.dto.EventDTO;
 import app.web.mapper.EventMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventService {
@@ -29,6 +31,7 @@ public class EventService {
 
     @Cacheable("activeEvent")
     public ActiveEventResponse getActiveEvent() {
+        log.debug("Fetching active event");
 
         return eventRepository.findByActiveTrue()
                 .map(EventMapper::toActiveEventResponse)
@@ -37,6 +40,8 @@ public class EventService {
 
     @CacheEvict(value = {"events", "activeEvent"}, allEntries = true)
     public void createEvent(CreateEventRequest request) {
+        log.info("Creating event with title '{}'", request.getTitle());
+
         if (eventRepository.existsByTitle(request.getTitle())) {
             throw new EventAlreadyExistsException(request.getTitle());
         }
@@ -64,10 +69,14 @@ public class EventService {
                 .build();
 
         eventRepository.save(event);
+
+        log.info("Event '{}' created successfully with ID {}", event.getTitle(), event.getId());
     }
 
     @CacheEvict(value = {"events", "activeEvent"}, allEntries = true)
     public void editEvent(EditEventRequest request) {
+        log.info("Editing event with ID {}", request.getId());
+
         Event event = eventRepository.findById(request.getId())
                 .orElseThrow(EventNotFoundException::new);
 
@@ -98,20 +107,32 @@ public class EventService {
         event.setEnd(request.getEnd());
 
         eventRepository.save(event);
+
+        log.info("Event with ID {} edited successfully", event.getId());
     }
 
     @Cacheable("events")
     public List<EventDTO> getAllEvents() {
-        return eventRepository.findAll().stream().map(EventMapper::toEventDTO).toList();
+        log.debug("Fetching all events");
+
+        List<EventDTO> events =  eventRepository.findAll().stream().map(EventMapper::toEventDTO).toList();
+
+        log.debug("Fetched {} events", events.size());
+
+        return events;
     }
 
     @CacheEvict(value = {"events", "activeEvent"}, allEntries = true)
     public void deleteEvent(UUID eventId) {
+        log.info("Deleting event with ID {}", eventId);
+
         if (!eventRepository.existsById(eventId)) {
             throw new EventNotFoundException();
         }
 
         eventRepository.deleteById(eventId);
+
+        log.info("Event with ID {} deleted successfully", eventId);
     }
 
     @Transactional
