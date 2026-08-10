@@ -1,8 +1,7 @@
-package app.server;
+package app.service;
 
 import app.model.Event;
 import app.repository.EventRepository;
-import app.service.EventService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

@@ -1,4 +1,4 @@
-package app.server;
+package app.service;
 
 import app.exception.EventAlreadyExistsException;
 import app.exception.EventNotFoundException;
@@ -6,7 +6,6 @@ import app.exception.InvalidEventException;
 import app.model.Event;
 import app.model.QuestType;
 import app.repository.EventRepository;
-import app.service.EventService;
 import app.web.dto.ActiveEventResponse;
 import app.web.dto.CreateEventRequest;
 import app.web.dto.EditEventRequest;
@@ -29,7 +28,6 @@ import java.util.UUID;
 import static app.util.EventFactory.getActiveEvent;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
