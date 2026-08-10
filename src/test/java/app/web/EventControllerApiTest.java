@@ -5,6 +5,7 @@ import app.service.EventService;
 import app.web.dto.ActiveEventResponse;
 import app.web.dto.CreateEventRequest;
 import app.web.dto.EditEventRequest;
+import app.web.dto.EventDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -20,6 +21,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -170,6 +172,71 @@ public class EventControllerApiTest {
                 .andExpect(status().isBadRequest());
 
         verify(eventService, never()).editEvent(any(EditEventRequest.class));
+    }
+
+    @Test
+    void getAllEvents_shouldReturnEvents_whenEventsExist() throws Exception {
+
+        UUID firstId = UUID.randomUUID();
+        UUID secondId = UUID.randomUUID();
+
+        EventDTO firstEvent = EventDTO.builder()
+                .id(firstId)
+                .title("First Event")
+                .description("First description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(100)
+                .bonusGold(50)
+                .start(LocalDateTime.of(2026, 8, 10, 10, 0))
+                .end(LocalDateTime.of(2026, 8, 10, 12, 0))
+                .build();
+
+        EventDTO secondEvent = EventDTO.builder()
+                .id(secondId)
+                .title("Second Event")
+                .description("Second description")
+                .affectedQuestType(QuestType.MAGIC)
+                .bonusXp(200)
+                .bonusGold(100)
+                .start(LocalDateTime.of(2026, 8, 11, 10, 0))
+                .end(LocalDateTime.of(2026, 8, 11, 12, 0))
+                .build();
+
+        when(eventService.getAllEvents())
+                .thenReturn(List.of(firstEvent, secondEvent));
+
+        mockMvc.perform(get("/api/v1/event/all"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(firstId.toString()))
+                .andExpect(jsonPath("$[0].title").value("First Event"))
+                .andExpect(jsonPath("$[0].description").value("First description"))
+                .andExpect(jsonPath("$[0].affectedQuestType").value("COMBAT"))
+                .andExpect(jsonPath("$[0].bonusXp").value(100))
+                .andExpect(jsonPath("$[0].bonusGold").value(50))
+                .andExpect(jsonPath("$[1].id").value(secondId.toString()))
+                .andExpect(jsonPath("$[1].title").value("Second Event"))
+                .andExpect(jsonPath("$[1].description").value("Second description"))
+                .andExpect(jsonPath("$[1].affectedQuestType").value("MAGIC"))
+                .andExpect(jsonPath("$[1].bonusXp").value(200))
+                .andExpect(jsonPath("$[1].bonusGold").value(100));
+
+        verify(eventService).getAllEvents();
+    }
+
+    @Test
+    void getAllEvents_shouldReturnEmptyList_whenNoEventsExist() throws Exception {
+
+        when(eventService.getAllEvents()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/event/all"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.length()").value(0))
+                .andExpect(content().json("[]"));
+
+        verify(eventService).getAllEvents();
     }
 
 
