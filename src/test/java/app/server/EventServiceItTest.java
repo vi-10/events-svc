@@ -1,6 +1,7 @@
 package app.server;
 
 import app.exception.EventAlreadyExistsException;
+import app.exception.EventNotFoundException;
 import app.exception.InvalidEventException;
 import app.model.Event;
 import app.model.QuestType;
@@ -8,6 +9,7 @@ import app.repository.EventRepository;
 import app.service.EventService;
 import app.web.dto.ActiveEventResponse;
 import app.web.dto.CreateEventRequest;
+import app.web.dto.EditEventRequest;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import static app.util.EventFactory.getActiveEvent;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -207,6 +210,208 @@ public class EventServiceItTest {
         assertThatThrownBy(() -> eventService.createEvent(request))
                 .isInstanceOf(InvalidEventException.class);
     }
+
+    @Test
+    void editEvent_shouldUpdateEventSuccessfully() {
+
+        LocalDateTime originalStart = LocalDateTime.now().plusHours(1);
+        LocalDateTime originalEnd = originalStart.plusHours(2);
+
+        Event event = Event.builder()
+                .title("Original Event")
+                .description("Original description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(50)
+                .bonusGold(25)
+                .start(originalStart)
+                .end(originalEnd)
+                .active(false)
+                .build();
+
+        event = eventRepository.save(event);
+
+        LocalDateTime newStart = LocalDateTime.now().plusHours(5);
+        LocalDateTime newEnd = newStart.plusHours(3);
+
+        EditEventRequest request = EditEventRequest.builder()
+                .id(event.getId())
+                .title("Updated Event")
+                .description("Updated description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(150)
+                .bonusGold(100)
+                .start(newStart)
+                .end(newEnd)
+                .build();
+
+        eventService.editEvent(request);
+
+        Event updatedEvent = eventRepository.findById(event.getId()).orElseThrow();
+
+        assertThat(updatedEvent.getTitle()).isEqualTo("Updated Event");
+        assertThat(updatedEvent.getDescription()).isEqualTo("Updated description");
+        assertThat(updatedEvent.getAffectedQuestType())
+                .isEqualTo(QuestType.COMBAT);
+        assertThat(updatedEvent.getBonusXp()).isEqualTo(150);
+        assertThat(updatedEvent.getBonusGold()).isEqualTo(100);
+        assertThat(updatedEvent.getStart()).isEqualTo(newStart);
+        assertThat(updatedEvent.getEnd()).isEqualTo(newEnd);
+        assertThat(updatedEvent.isActive()).isFalse();
+    }
+
+    @Test
+    void editEvent_shouldThrowException_whenEventDoesNotExist() {
+
+        EditEventRequest request = EditEventRequest.builder()
+                .id(UUID.randomUUID())
+                .title("Updated Event")
+                .description("Updated description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(100)
+                .bonusGold(50)
+                .start(LocalDateTime.now().plusHours(1))
+                .end(LocalDateTime.now().plusHours(2))
+                .build();
+
+        assertThatThrownBy(() -> eventService.editEvent(request))
+                .isInstanceOf(EventNotFoundException.class);
+    }
+
+    @Test
+    void editEvent_shouldThrowException_whenTitleBelongsToAnotherEvent() {
+
+        LocalDateTime firstStart = LocalDateTime.now().plusHours(1);
+        LocalDateTime firstEnd = firstStart.plusHours(1);
+
+        Event event = Event.builder()
+                .title("Original Event")
+                .description("Original description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(50)
+                .bonusGold(25)
+                .start(firstStart)
+                .end(firstEnd)
+                .active(false)
+                .build();
+
+        eventRepository.save(event);
+
+        LocalDateTime secondStart = LocalDateTime.now().plusHours(3);
+        LocalDateTime secondEnd = secondStart.plusHours(1);
+
+        Event otherEvent = Event.builder()
+                .title("Existing Title")
+                .description("Other description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(75)
+                .bonusGold(30)
+                .start(secondStart)
+                .end(secondEnd)
+                .active(false)
+                .build();
+
+        eventRepository.save(otherEvent);
+
+        EditEventRequest request = EditEventRequest.builder()
+                .id(event.getId())
+                .title("Existing Title")
+                .description("Updated description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(100)
+                .bonusGold(50)
+                .start(firstStart)
+                .end(firstEnd)
+                .build();
+
+        assertThatThrownBy(() -> eventService.editEvent(request))
+                .isInstanceOf(EventAlreadyExistsException.class);
+    }
+
+    @Test
+    void editEvent_shouldThrowException_whenStartIsNotBeforeEnd() {
+
+        LocalDateTime start = LocalDateTime.now().plusHours(3);
+        LocalDateTime end = start.minusHours(1);
+
+        Event event = Event.builder()
+                .title("Original Event")
+                .description("Original description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(50)
+                .bonusGold(25)
+                .start(LocalDateTime.now().plusHours(5))
+                .end(LocalDateTime.now().plusHours(6))
+                .active(false)
+                .build();
+
+        eventRepository.save(event);
+
+        EditEventRequest request = EditEventRequest.builder()
+                .id(event.getId())
+                .title("Updated Event")
+                .description("Updated description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(100)
+                .bonusGold(50)
+                .start(start)
+                .end(end)
+                .build();
+
+        assertThatThrownBy(() -> eventService.editEvent(request))
+                .isInstanceOf(InvalidEventException.class);
+    }
+
+    @Test
+    void editEvent_shouldThrowException_whenNewDatesOverlapAnotherEvent() {
+
+        LocalDateTime firstStart = LocalDateTime.now().plusHours(1);
+        LocalDateTime firstEnd = firstStart.plusHours(1);
+
+        Event event = Event.builder()
+                .title("Original Event")
+                .description("Original description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(50)
+                .bonusGold(25)
+                .start(firstStart)
+                .end(firstEnd)
+                .active(false)
+                .build();
+
+        eventRepository.save(event);
+
+        LocalDateTime otherStart = LocalDateTime.now().plusHours(5);
+        LocalDateTime otherEnd = otherStart.plusHours(2);
+
+        Event otherEvent = Event.builder()
+                .title("Other Event")
+                .description("Other description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(75)
+                .bonusGold(30)
+                .start(otherStart)
+                .end(otherEnd)
+                .active(false)
+                .build();
+
+        eventRepository.save(otherEvent);
+
+        EditEventRequest request = EditEventRequest.builder()
+                .id(event.getId())
+                .title("Updated Event")
+                .description("Updated description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(100)
+                .bonusGold(50)
+                .start(otherStart.plusMinutes(30))
+                .end(otherEnd.plusMinutes(30))
+                .build();
+
+        assertThatThrownBy(() -> eventService.editEvent(request))
+                .isInstanceOf(InvalidEventException.class);
+    }
+
+
 
 
 
