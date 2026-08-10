@@ -152,4 +152,46 @@ public class EventServiceUnitTest {
 
         verify(eventRepository, never()).saveAll(any());
     }
+
+    @Test
+    void deactivateExpiredEvents_shouldDeactivateExpiredEvents() {
+
+        Event firstEvent = Event.builder()
+                .title("Expired Event 1")
+                .active(true)
+                .end(LocalDateTime.now().minusMinutes(10))
+                .build();
+
+        Event secondEvent = Event.builder()
+                .title("Expired Event 2")
+                .active(true)
+                .end(LocalDateTime.now().minusHours(1))
+                .build();
+
+        when(eventRepository.findByActiveTrueAndEndBefore(any(LocalDateTime.class)))
+                .thenReturn(List.of(firstEvent, secondEvent));
+
+        boolean result = eventService.deactivateExpiredEvents();
+
+        assertThat(result).isTrue();
+
+        assertThat(firstEvent.isActive()).isFalse();
+        assertThat(secondEvent.isActive()).isFalse();
+
+        verify(eventRepository).saveAll(List.of(firstEvent, secondEvent));
+    }
+
+    @Test
+    void deactivateExpiredEvents_shouldReturnFalse_whenNoExpiredEventsExist() {
+
+        when(eventRepository.findByActiveTrueAndEndBefore(any(LocalDateTime.class)))
+                .thenReturn(List.of());
+
+        boolean result = eventService.deactivateExpiredEvents();
+
+        assertThat(result).isFalse();
+
+        verify(eventRepository, never()).saveAll(any());
+    }
+
 }
