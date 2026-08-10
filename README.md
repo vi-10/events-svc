@@ -165,7 +165,7 @@ Caching is enabled through Spring's caching support.
 
 ### Active Event Cache
 
-The active event is cached using:
+The active event is cached.
 
 This prevents repeated database queries when retrieving the currently active event.
 
@@ -173,7 +173,7 @@ This prevents repeated database queries when retrieving the currently active eve
 
 ### Events Cache
 
-The complete list of events is cached using:
+The complete list of events is cached.
 
 This reduces repeated database access when retrieving all events.
 
