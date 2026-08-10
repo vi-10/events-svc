@@ -486,11 +486,39 @@ public class EventServiceItTest {
         assertThat(secondResult.get(0).getTitle()).isEqualTo("Cached Event");
     }
 
+    @Test
+    void deleteEvent_shouldDeleteExistingEvent() {
 
+        Event event = Event.builder()
+                .title("Event to Delete")
+                .description("Event description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(100)
+                .bonusGold(50)
+                .start(LocalDateTime.now().plusHours(1))
+                .end(LocalDateTime.now().plusHours(2))
+                .active(false)
+                .build();
 
+        Event savedEvent = eventRepository.save(event);
 
+        eventService.deleteEvent(savedEvent.getId());
 
+        assertThat(eventRepository.findById(savedEvent.getId()))
+                .isEmpty();
+    }
 
+    @Test
+    void deleteEvent_shouldThrowException_whenEventDoesNotExist() {
+
+        UUID eventId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> eventService.deleteEvent(eventId))
+                .isInstanceOf(EventNotFoundException.class);
+
+        assertThat(eventRepository.findById(eventId))
+                .isEmpty();
+    }
 
 
 }
