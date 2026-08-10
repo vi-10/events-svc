@@ -10,9 +10,13 @@ import app.web.dto.CreateEventRequest;
 import app.web.dto.EditEventRequest;
 import app.web.dto.EventDTO;
 import app.web.mapper.EventMapper;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,6 +27,7 @@ public class EventService {
 
     private final EventRepository eventRepository;
 
+    @Cacheable("activeEvent")
     public ActiveEventResponse getActiveEvent() {
 
         return eventRepository.findByActiveTrue()
@@ -30,6 +35,7 @@ public class EventService {
                 .orElse(null);
     }
 
+    @CacheEvict(value = {"events", "activeEvent"}, allEntries = true)
     public void createEvent(CreateEventRequest request) {
         if (eventRepository.existsByTitle(request.getTitle())) {
             throw new EventAlreadyExistsException(request.getTitle());
@@ -60,6 +66,7 @@ public class EventService {
         eventRepository.save(event);
     }
 
+    @CacheEvict(value = {"events", "activeEvent"}, allEntries = true)
     public void editEvent(EditEventRequest request) {
         Event event = eventRepository.findById(request.getId())
                 .orElseThrow(EventNotFoundException::new);
@@ -93,15 +100,58 @@ public class EventService {
         eventRepository.save(event);
     }
 
+    @Cacheable("events")
     public List<EventDTO> getAllEvents() {
         return eventRepository.findAll().stream().map(EventMapper::toEventDTO).toList();
     }
 
+    @CacheEvict(value = {"events", "activeEvent"}, allEntries = true)
     public void deleteEvent(UUID eventId) {
         if (!eventRepository.existsById(eventId)) {
             throw new EventNotFoundException();
         }
 
         eventRepository.deleteById(eventId);
+    }
+
+    @Transactional
+    @CacheEvict(value = {"events", "activeEvent"}, allEntries = true)
+    public boolean updateEventStatus() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Event> events = eventRepository.findAll();
+        boolean changed = false;
+
+        for (Event event : events) {
+            boolean shouldBeActive = event.getStart() != null &&
+                    event.getEnd() != null &&
+                    !now.isBefore(event.getStart()) &&
+                    now.isBefore(event.getEnd());
+
+            if (event.isActive() != shouldBeActive) {
+                event.setActive(shouldBeActive);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            eventRepository.saveAll(events);
+        }
+
+        return changed;
+    }
+
+    @Transactional
+    @CacheEvict(value = {"events", "activeEvent"}, allEntries = true)
+    public boolean deactivateExpiredEvents() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Event> expiredEvents = eventRepository.findByActiveTrueAndEndBefore(now);
+
+        if (expiredEvents.isEmpty()) {
+            return false;
+        }
+
+        expiredEvents.forEach(event -> event.setActive(false));
+        eventRepository.saveAll(expiredEvents);
+        return true;
     }
 }
