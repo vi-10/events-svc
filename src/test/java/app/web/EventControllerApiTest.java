@@ -1,5 +1,6 @@
 package app.web;
 
+import app.exception.EventNotFoundException;
 import app.model.QuestType;
 import app.service.EventService;
 import app.web.dto.ActiveEventResponse;
@@ -238,6 +239,36 @@ public class EventControllerApiTest {
 
         verify(eventService).getAllEvents();
     }
+
+    @Test
+    void deleteEvent_shouldReturn204_whenEventIsDeleted() throws Exception {
+
+        UUID eventId = UUID.randomUUID();
+
+        doNothing().when(eventService).deleteEvent(eventId);
+
+        mockMvc.perform(delete("/api/v1/event/{eventId}", eventId))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        verify(eventService).deleteEvent(eventId);
+    }
+
+    @Test
+    void deleteEvent_shouldReturn404_whenEventDoesNotExist() throws Exception {
+
+        UUID eventId = UUID.randomUUID();
+
+        doThrow(new EventNotFoundException())
+                .when(eventService)
+                .deleteEvent(eventId);
+
+        mockMvc.perform(delete("/api/v1/event/{eventId}", eventId))
+                .andExpect(status().isNotFound());
+
+        verify(eventService).deleteEvent(eventId);
+    }
+
 
 
 }
