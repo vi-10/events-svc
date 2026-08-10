@@ -10,6 +10,7 @@ import app.service.EventService;
 import app.web.dto.ActiveEventResponse;
 import app.web.dto.CreateEventRequest;
 import app.web.dto.EditEventRequest;
+import app.web.dto.EventDTO;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -409,6 +411,79 @@ public class EventServiceItTest {
 
         assertThatThrownBy(() -> eventService.editEvent(request))
                 .isInstanceOf(InvalidEventException.class);
+    }
+
+    @Test
+    void getAllEvents_shouldReturnAllEvents() {
+
+        Event firstEvent = Event.builder()
+                .title("First Event")
+                .description("First description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(100)
+                .bonusGold(50)
+                .start(LocalDateTime.now().plusHours(1))
+                .end(LocalDateTime.now().plusHours(2))
+                .active(false)
+                .build();
+
+        Event secondEvent = Event.builder()
+                .title("Second Event")
+                .description("Second description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(200)
+                .bonusGold(100)
+                .start(LocalDateTime.now().plusHours(3))
+                .end(LocalDateTime.now().plusHours(4))
+                .active(false)
+                .build();
+
+        eventRepository.saveAll(List.of(firstEvent, secondEvent));
+
+        List<EventDTO> result = eventService.getAllEvents();
+
+        assertThat(result.size()).isEqualTo(2);
+
+        assertThat(result.get(0).getTitle())
+                .isEqualTo("First Event");
+
+        assertThat(result.get(0).getDescription())
+                .isEqualTo("First description");
+
+        assertThat(result.get(1).getTitle())
+                .isEqualTo("Second Event");
+
+        assertThat(result.get(1).getDescription())
+                .isEqualTo("Second description");
+    }
+
+    @Test
+    void getAllEvents_shouldReturnCachedResult_onSubsequentCall() {
+
+        Event event = Event.builder()
+                .title("Cached Event")
+                .description("Cached description")
+                .affectedQuestType(QuestType.COMBAT)
+                .bonusXp(100)
+                .bonusGold(50)
+                .start(LocalDateTime.now().plusHours(1))
+                .end(LocalDateTime.now().plusHours(2))
+                .active(false)
+                .build();
+
+        eventRepository.save(event);
+
+        List<EventDTO> firstResult = eventService.getAllEvents();
+
+        assertThat(firstResult.size()).isEqualTo(1);
+        assertThat(firstResult.get(0).getTitle()).isEqualTo("Cached Event");
+
+        eventRepository.deleteAll();
+
+        List<EventDTO> secondResult = eventService.getAllEvents();
+
+        assertThat(secondResult.size()).isEqualTo(1);
+        assertThat(secondResult.get(0).getTitle()).isEqualTo("Cached Event");
     }
 
 
